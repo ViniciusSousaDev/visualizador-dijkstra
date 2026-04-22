@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dijkstra Visualizer</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">⬡</span>
+      <div>
+        <h1>DIJKSTRA</h1>
+        <p class="subtitle">Shortest Path Visualizer</p>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="dot unvisited"></span> Não visitado
+      <span class="dot visiting"></span> Visitando
+      <span class="dot visited"></span> Visitado
+      <span class="dot path"></span> Caminho
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel">
+      <section class="panel-block">
+        <h2 class="panel-title">⚙ Controles</h2>
+
+        <div class="btn-group">
+          <button id="btn-add-node" class="tool-btn active" title="Clique no canvas para adicionar nó">
+            <span>⊕</span> Nó
+          </button>
+          <button id="btn-add-edge" class="tool-btn" title="Clique em dois nós para adicionar aresta">
+            <span>⟶</span> Aresta
+          </button>
+          <button id="btn-delete" class="tool-btn danger" title="Clique em um elemento para deletar">
+            <span>✕</span> Deletar
+          </button>
+        </div>
+
+        <div class="field">
+          <label>Peso da aresta</label>
+          <input type="number" id="edge-weight" value="1" min="1" max="99" />
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">▶ Algoritmo</h2>
+
+        <div class="field">
+          <label>Nó de origem</label>
+          <select id="select-source">
+            <option value="">— selecione —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Nó de destino <span class="optional">(opcional)</span></label>
+          <select id="select-target">
+            <option value="">— todos —</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Velocidade da animação</label>
+          <input type="range" id="speed" min="100" max="1500" value="700" step="100" />
+          <div class="range-labels"><span>Rápido</span><span>Lento</span></div>
+        </div>
+
+        <button id="btn-run" class="run-btn">
+          <span>▶</span> Executar Dijkstra
+        </button>
+        <button id="btn-reset" class="reset-btn">
+          <span>↺</span> Resetar Grafo
+        </button>
+        <button id="btn-clear-run" class="clear-btn" disabled>
+          <span>⟳</span> Limpar Execução
+        </button>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">📊 Distâncias</h2>
+        <div id="distances-output" class="distances-table">
+          <p class="hint">Execute o algoritmo para ver os resultados.</p>
+        </div>
+      </section>
+
+      <section class="panel-block">
+        <h2 class="panel-title">📋 Log</h2>
+        <div id="log" class="log-box">
+          <p class="hint">Adicione nós e arestas, depois execute.</p>
+        </div>
+      </section>
+    </aside>
+
+    <div class="canvas-wrap">
+      <canvas id="graph-canvas"></canvas>
+      <div id="canvas-hint">
+        Clique para adicionar um <strong>nó</strong>
+      </div>
+      <div id="edge-modal" class="modal hidden">
+        <div class="modal-inner">
+          <p>Peso da aresta</p>
+          <input type="number" id="modal-weight" value="1" min="1" max="99" />
+          <div class="modal-btns">
+            <button id="modal-ok">Confirmar</button>
+            <button id="modal-cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Algoritmo de Dijkstra — O((V + E) log V) &nbsp;|&nbsp; Feito com HTML · CSS · JS</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
