@@ -4,124 +4,347 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dijkstra Visualizer</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0d0f14; --bg2:#13161e; --bg3:#1a1e2a;
+  --border:#252a38; --border2:#2e3448;
+  --cyan:#00e5ff; --cyan-dim:rgba(0,229,255,.15);
+  --amber:#ffb300; --green:#00e676; --red:#ff3d71;
+  --text:#c8cfe8; --text-dim:#5c647e;
+  --font-ui:'Syne',sans-serif; --font-mono:'Share Tech Mono',monospace;
+  --radius:6px;
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.4;}
+header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--border2);background:rgba(13,15,20,.85);backdrop-filter:blur(12px);}
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-icon{font-size:2rem;color:var(--cyan);filter:drop-shadow(0 0 10px var(--cyan));animation:pulse 3s ease-in-out infinite;}
+@keyframes pulse{0%,100%{filter:drop-shadow(0 0 10px var(--cyan));}50%{filter:drop-shadow(0 0 22px var(--cyan)) brightness(1.3);}}
+.logo h1{font-family:var(--font-ui);font-weight:800;font-size:1.6rem;letter-spacing:.18em;color:#fff;line-height:1;}
+.logo .subtitle{font-family:var(--font-mono);font-size:.72rem;color:var(--cyan);letter-spacing:.12em;margin-top:2px;}
+.legend{display:flex;align-items:center;gap:16px;font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.dot.unvisited{background:#1e2436;border:2px solid #00e5ff;}
+.dot.visiting{background:#ff6d00;}
+.dot.visited{background:#ffb300;}
+.dot.path{background:#00e676;}
+main{position:relative;z-index:5;display:flex;flex:1;min-height:0;}
+.panel{width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:1px;background:var(--border);border-right:1px solid var(--border2);overflow-y:auto;max-height:calc(100vh - 65px - 40px);}
+.panel::-webkit-scrollbar{width:4px;}.panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+.panel-block{background:var(--bg2);padding:18px 16px;display:flex;flex-direction:column;gap:12px;}
+.panel-title{font-size:.7rem;font-family:var(--font-mono);letter-spacing:.14em;color:var(--cyan);text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border2);}
+.btn-group{display:flex;gap:6px;}
+.tool-btn{flex:1;padding:8px 4px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text-dim);font-family:var(--font-mono);font-size:.78rem;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.tool-btn span{font-size:1rem;}
+.tool-btn:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+.tool-btn.active{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);box-shadow:inset 0 0 12px rgba(0,229,255,.08);}
+.tool-btn.danger:hover,.tool-btn.danger.active{border-color:var(--red);color:var(--red);background:rgba(255,61,113,.12);}
+.run-btn,.reset-btn,.clear-btn{width:100%;padding:10px;border-radius:var(--radius);font-family:var(--font-ui);font-weight:600;font-size:.85rem;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.06em;}
+.run-btn{background:var(--cyan);color:#000;border:none;box-shadow:0 0 20px rgba(0,229,255,.3);}
+.run-btn:hover{background:#33eeff;box-shadow:0 0 30px rgba(0,229,255,.5);transform:translateY(-1px);}
+.run-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.reset-btn{background:transparent;border:1px solid var(--red);color:var(--red);}
+.reset-btn:hover{background:rgba(255,61,113,.12);}
+.clear-btn{background:transparent;border:1px solid var(--border2);color:var(--text-dim);}
+.clear-btn:not(:disabled):hover{border-color:var(--amber);color:var(--amber);}
+.clear-btn:disabled{opacity:.35;cursor:not-allowed;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:.7rem;font-family:var(--font-mono);color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
+.field .optional{color:var(--text-dim);font-size:.65rem;}
+.field input[type="number"],.field select{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.85rem;padding:7px 10px;outline:none;transition:border .15s;width:100%;}
+.field select option{background:var(--bg3);color:var(--text);}
+.field input[type="number"]:focus,.field select:focus{border-color:var(--cyan);}
+.field input[type="range"]{width:100%;accent-color:var(--cyan);cursor:pointer;}
+.range-labels{display:flex;justify-content:space-between;font-size:.65rem;font-family:var(--font-mono);color:var(--text-dim);}
+.distances-table{display:flex;flex-direction:column;gap:4px;font-family:var(--font-mono);font-size:.8rem;max-height:180px;overflow-y:auto;}
+.distances-table::-webkit-scrollbar{width:3px;}.distances-table::-webkit-scrollbar-thumb{background:var(--border2);}
+.dist-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--bg3);border-radius:4px;border-left:3px solid var(--border2);transition:border-color .3s;}
+.dist-row.path{border-left-color:var(--green);}
+.dist-row.unreachable{opacity:.5;}
+.dist-row .dist-node{color:var(--cyan);}
+.dist-row .dist-val{color:var(--amber);}
+.dist-row .dist-val.inf{color:var(--text-dim);}
+.log-box{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.log-box::-webkit-scrollbar{width:3px;}.log-box::-webkit-scrollbar-thumb{background:var(--border2);}
+.log-entry{padding:3px 6px;border-radius:3px;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:none;}}
+.log-entry.info{color:var(--text-dim);}
+.log-entry.visit{color:var(--amber);}
+.log-entry.path{color:var(--green);}
+.log-entry.done{color:var(--cyan);}
+.hint{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);font-style:italic;}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);}
+#graph-canvas{display:block;width:100%;height:100%;cursor:crosshair;}
+#canvas-hint{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(13,15,20,.88);border:1px solid var(--border2);padding:7px 18px;border-radius:20px;font-family:var(--font-mono);font-size:.78rem;color:var(--text-dim);pointer-events:none;backdrop-filter:blur(8px);white-space:nowrap;}
+#canvas-hint strong{color:var(--cyan);}
+.modal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:100;}
+.modal.hidden{display:none;}
+.modal-inner{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:24px 28px;display:flex;flex-direction:column;gap:14px;min-width:220px;box-shadow:0 8px 40px rgba(0,0,0,.6);}
+.modal-inner p{font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);}
+.modal-inner input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:1rem;padding:8px 12px;outline:none;text-align:center;}
+.modal-inner input:focus{border-color:var(--cyan);}
+.modal-btns{display:flex;gap:8px;}
+.modal-btns button{flex:1;padding:8px;border-radius:var(--radius);font-family:var(--font-ui);font-weight:600;font-size:.85rem;cursor:pointer;transition:all .15s;}
+#modal-ok{background:var(--cyan);color:#000;border:none;}
+#modal-ok:hover{background:#33eeff;}
+#modal-cancel{background:transparent;border:1px solid var(--border2);color:var(--text-dim);}
+#modal-cancel:hover{border-color:var(--red);color:var(--red);}
+footer{position:relative;z-index:10;text-align:center;padding:10px;border-top:1px solid var(--border);background:rgba(13,15,20,.85);font-family:var(--font-mono);font-size:.7rem;color:var(--text-dim);}
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+@media(max-width:700px){main{flex-direction:column;}.panel{width:100%;max-height:42vh;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--border2);}.panel-block{min-width:230px;}.canvas-wrap{height:58vh;}.legend{display:none;}}
+</style>
 </head>
 <body>
-
-  <div class="bg-grid"></div>
-
-  <header>
-    <div class="logo">
-      <span class="logo-icon">⬡</span>
-      <div>
-        <h1>DIJKSTRA</h1>
-        <p class="subtitle">Shortest Path Visualizer</p>
+<div class="bg-grid"></div>
+<header>
+  <div class="logo">
+    <span class="logo-icon">⬡</span>
+    <div><h1>DIJKSTRA</h1><p class="subtitle">Visualizador de Caminho Mais Curto</p></div>
+  </div>
+  <div class="legend">
+    <span class="dot unvisited"></span> Não visitado &nbsp;
+    <span class="dot visiting"></span> Visitando &nbsp;
+    <span class="dot visited"></span> Visitado &nbsp;
+    <span class="dot path"></span> Caminho
+  </div>
+</header>
+<main>
+  <aside class="panel">
+    <section class="panel-block">
+      <h2 class="panel-title">⚙ Controles</h2>
+      <div class="btn-group">
+        <button id="btn-add-node" class="tool-btn active"><span>⊕</span> Nó</button>
+        <button id="btn-add-edge" class="tool-btn"><span>⟶</span> Aresta</button>
+        <button id="btn-delete"   class="tool-btn danger"><span>✕</span> Deletar</button>
       </div>
-    </div>
-    <div class="legend">
-      <span class="dot unvisited"></span> Não visitado
-      <span class="dot visiting"></span> Visitando
-      <span class="dot visited"></span> Visitado
-      <span class="dot path"></span> Caminho
-    </div>
-  </header>
-
-  <main>
-    <aside class="panel">
-      <section class="panel-block">
-        <h2 class="panel-title">⚙ Controles</h2>
-
-        <div class="btn-group">
-          <button id="btn-add-node" class="tool-btn active" title="Clique no canvas para adicionar nó">
-            <span>⊕</span> Nó
-          </button>
-          <button id="btn-add-edge" class="tool-btn" title="Clique em dois nós para adicionar aresta">
-            <span>⟶</span> Aresta
-          </button>
-          <button id="btn-delete" class="tool-btn danger" title="Clique em um elemento para deletar">
-            <span>✕</span> Deletar
-          </button>
-        </div>
-
-        <div class="field">
-          <label>Peso da aresta</label>
-          <input type="number" id="edge-weight" value="1" min="1" max="99" />
-        </div>
-      </section>
-
-      <section class="panel-block">
-        <h2 class="panel-title">▶ Algoritmo</h2>
-
-        <div class="field">
-          <label>Nó de origem</label>
-          <select id="select-source">
-            <option value="">— selecione —</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Nó de destino <span class="optional">(opcional)</span></label>
-          <select id="select-target">
-            <option value="">— todos —</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Velocidade da animação</label>
-          <input type="range" id="speed" min="100" max="1500" value="700" step="100" />
-          <div class="range-labels"><span>Rápido</span><span>Lento</span></div>
-        </div>
-
-        <button id="btn-run" class="run-btn">
-          <span>▶</span> Executar Dijkstra
-        </button>
-        <button id="btn-reset" class="reset-btn">
-          <span>↺</span> Resetar Grafo
-        </button>
-        <button id="btn-clear-run" class="clear-btn" disabled>
-          <span>⟳</span> Limpar Execução
-        </button>
-      </section>
-
-      <section class="panel-block">
-        <h2 class="panel-title">📊 Distâncias</h2>
-        <div id="distances-output" class="distances-table">
-          <p class="hint">Execute o algoritmo para ver os resultados.</p>
-        </div>
-      </section>
-
-      <section class="panel-block">
-        <h2 class="panel-title">📋 Log</h2>
-        <div id="log" class="log-box">
-          <p class="hint">Adicione nós e arestas, depois execute.</p>
-        </div>
-      </section>
-    </aside>
-
-    <div class="canvas-wrap">
-      <canvas id="graph-canvas"></canvas>
-      <div id="canvas-hint">
-        Clique para adicionar um <strong>nó</strong>
+      <div class="field">
+        <label>Peso da aresta</label>
+        <input type="number" id="edge-weight" value="1" min="1" max="99" />
       </div>
-      <div id="edge-modal" class="modal hidden">
-        <div class="modal-inner">
-          <p>Peso da aresta</p>
-          <input type="number" id="modal-weight" value="1" min="1" max="99" />
-          <div class="modal-btns">
-            <button id="modal-ok">Confirmar</button>
-            <button id="modal-cancel">Cancelar</button>
-          </div>
+    </section>
+    <section class="panel-block">
+      <h2 class="panel-title">▶ Algoritmo</h2>
+      <div class="field">
+        <label>Nó de origem</label>
+        <select id="select-source"><option value="">— selecione —</option></select>
+      </div>
+      <div class="field">
+        <label>Nó de destino <span class="optional">(opcional)</span></label>
+        <select id="select-target"><option value="">— todos —</option></select>
+      </div>
+      <div class="field">
+        <label>Velocidade da animação</label>
+        <input type="range" id="speed" min="100" max="1500" value="700" step="100" />
+        <div class="range-labels"><span>Lento</span><span>Rápido</span></div>
+      </div>
+      <button id="btn-run"       class="run-btn"><span>▶</span> Executar Dijkstra</button>
+      <button id="btn-reset"     class="reset-btn"><span>↺</span> Resetar Grafo</button>
+      <button id="btn-clear-run" class="clear-btn" disabled><span>⟳</span> Limpar Execução</button>
+    </section>
+    <section class="panel-block">
+      <h2 class="panel-title">📊 Distâncias</h2>
+      <div id="distances-output" class="distances-table">
+        <p class="hint">Execute o algoritmo para ver os resultados.</p>
+      </div>
+    </section>
+    <section class="panel-block">
+      <h2 class="panel-title">📋 Log</h2>
+      <div id="log" class="log-box">
+        <p class="hint">Adicione nós e arestas, depois execute.</p>
+      </div>
+    </section>
+  </aside>
+  <div class="canvas-wrap">
+    <canvas id="graph-canvas"></canvas>
+    <div id="canvas-hint">Clique para adicionar um <strong>nó</strong></div>
+    <div id="edge-modal" class="modal hidden">
+      <div class="modal-inner">
+        <p>Peso da aresta</p>
+        <input type="number" id="modal-weight" value="1" min="1" max="99" />
+        <div class="modal-btns">
+          <button id="modal-ok">Confirmar</button>
+          <button id="modal-cancel">Cancelar</button>
         </div>
       </div>
     </div>
-  </main>
+  </div>
+</main>
+<footer><p>Algoritmo de Dijkstra — O((V + E) log V) &nbsp;|&nbsp; HTML · CSS · JavaScript</p></footer>
 
-  <footer>
-    <p>Algoritmo de Dijkstra — O((V + E) log V) &nbsp;|&nbsp; Feito com HTML · CSS · JS</p>
-  </footer>
+<script>
+const state={nodes:[],edges:[],tool:'node',edgePending:null,nodeCounter:0,edgeCounter:0,running:false};
+const canvas=document.getElementById('graph-canvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){const w=canvas.parentElement;canvas.width=w.clientWidth;canvas.height=w.clientHeight;draw();}
+window.addEventListener('resize',resizeCanvas);
+const btnNode=document.getElementById('btn-add-node');
+const btnEdge=document.getElementById('btn-add-edge');
+const btnDelete=document.getElementById('btn-delete');
+const btnRun=document.getElementById('btn-run');
+const btnReset=document.getElementById('btn-reset');
+const btnClearRun=document.getElementById('btn-clear-run');
+const selSource=document.getElementById('select-source');
+const selTarget=document.getElementById('select-target');
+const speedInput=document.getElementById('speed');
+const logBox=document.getElementById('log');
+const distOutput=document.getElementById('distances-output');
+const canvasHint=document.getElementById('canvas-hint');
+const edgeModal=document.getElementById('edge-modal');
+const modalWeight=document.getElementById('modal-weight');
+const modalOk=document.getElementById('modal-ok');
+const modalCancel=document.getElementById('modal-cancel');
 
-  <script src="app.js"></script>
+function setTool(t){
+  state.tool=t;state.edgePending=null;
+  [btnNode,btnEdge,btnDelete].forEach(b=>b.classList.remove('active'));
+  if(t==='node'){btnNode.classList.add('active');canvasHint.innerHTML='Clique para adicionar um <strong>nó</strong>';}
+  if(t==='edge'){btnEdge.classList.add('active');canvasHint.innerHTML='Clique em um <strong>nó de origem</strong>';}
+  if(t==='delete'){btnDelete.classList.add('active');canvasHint.innerHTML='Clique em um <strong>nó ou aresta</strong> para deletar';}
+  draw();
+}
+btnNode.addEventListener('click',()=>setTool('node'));
+btnEdge.addEventListener('click',()=>setTool('edge'));
+btnDelete.addEventListener('click',()=>setTool('delete'));
+
+const NODE_R=22;
+const getNodeAt=(x,y)=>state.nodes.find(n=>Math.hypot(n.x-x,n.y-y)<=NODE_R);
+function getEdgeAt(x,y){
+  const T=8;
+  return state.edges.find(e=>{
+    const a=state.nodes.find(n=>n.id===e.from),b=state.nodes.find(n=>n.id===e.to);
+    if(!a||!b)return false;
+    const dx=b.x-a.x,dy=b.y-a.y,len2=dx*dx+dy*dy;
+    if(len2===0)return Math.hypot(a.x-x,a.y-y)<T;
+    const t=Math.max(0,Math.min(1,((x-a.x)*dx+(y-a.y)*dy)/len2));
+    return Math.hypot(a.x+t*dx-x,a.y+t*dy-y)<T;
+  });
+}
+
+canvas.addEventListener('click',e=>{
+  if(state.running)return;
+  const r=canvas.getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  if(state.tool==='node'){if(!getNodeAt(x,y))addNode(x,y);return;}
+  if(state.tool==='edge'){
+    const hit=getNodeAt(x,y);if(!hit)return;
+    if(!state.edgePending){state.edgePending=hit;canvasHint.innerHTML=`De <strong>${hit.label}</strong> — clique no nó de <strong>destino</strong>`;draw();}
+    else{if(state.edgePending.id!==hit.id)showEdgeModal(state.edgePending,hit);else{state.edgePending=null;canvasHint.innerHTML='Clique em um <strong>nó de origem</strong>';draw();}}
+    return;
+  }
+  if(state.tool==='delete'){const node=getNodeAt(x,y);if(node){deleteNode(node);return;}const edge=getEdgeAt(x,y);if(edge)deleteEdge(edge);}
+});
+
+let pendingEdgePair=null;
+function showEdgeModal(from,to){pendingEdgePair={from,to};modalWeight.value=document.getElementById('edge-weight').value;edgeModal.classList.remove('hidden');setTimeout(()=>{modalWeight.focus();modalWeight.select();},50);}
+modalOk.addEventListener('click',confirmEdge);
+modalCancel.addEventListener('click',cancelEdge);
+modalWeight.addEventListener('keydown',e=>{if(e.key==='Enter')confirmEdge();if(e.key==='Escape')cancelEdge();});
+function confirmEdge(){if(!pendingEdgePair)return;addEdge(pendingEdgePair.from,pendingEdgePair.to,Math.max(1,parseInt(modalWeight.value)||1));pendingEdgePair=null;state.edgePending=null;edgeModal.classList.add('hidden');canvasHint.innerHTML='Clique em um <strong>nó de origem</strong>';}
+function cancelEdge(){pendingEdgePair=null;state.edgePending=null;edgeModal.classList.add('hidden');canvasHint.innerHTML='Clique em um <strong>nó de origem</strong>';draw();}
+
+const LABELS='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let labelIdx=0;
+function nextLabel(){const l=LABELS[labelIdx%26]+(labelIdx>=26?Math.floor(labelIdx/26):'');labelIdx++;return l;}
+function addNode(x,y){const node={id:++state.nodeCounter,x,y,label:nextLabel(),status:'default'};state.nodes.push(node);updateSelects();draw();logInfo(`Nó <strong>${node.label}</strong> adicionado`);}
+function addEdge(from,to,weight){const exists=state.edges.find(e=>(e.from===from.id&&e.to===to.id)||(e.from===to.id&&e.to===from.id));if(exists){exists.weight=weight;draw();logInfo(`Aresta ${from.label}↔${to.label} atualizada (peso ${weight})`);return;}state.edges.push({id:++state.edgeCounter,from:from.id,to:to.id,weight,status:'default'});draw();logInfo(`Aresta ${from.label}↔${to.label} (peso ${weight}) adicionada`);}
+function deleteNode(node){state.nodes=state.nodes.filter(n=>n.id!==node.id);state.edges=state.edges.filter(e=>e.from!==node.id&&e.to!==node.id);updateSelects();draw();logInfo(`Nó ${node.label} deletado`);}
+function deleteEdge(edge){const a=state.nodes.find(n=>n.id===edge.from),b=state.nodes.find(n=>n.id===edge.to);state.edges=state.edges.filter(e=>e.id!==edge.id);draw();logInfo(`Aresta ${a?.label}↔${b?.label} deletada`);}
+function updateSelects(){const sv=selSource.value,tv=selTarget.value;[selSource,selTarget].forEach((sel,i)=>{sel.innerHTML=i===0?'<option value="">— selecione —</option>':'<option value="">— todos —</option>';state.nodes.forEach(n=>{const o=document.createElement('option');o.value=n.id;o.textContent=`Nó ${n.label}`;sel.appendChild(o);});});if(state.nodes.find(n=>n.id==sv))selSource.value=sv;if(state.nodes.find(n=>n.id==tv))selTarget.value=tv;}
+
+const COLORS={default:{fill:'#1e2436',stroke:'#00e5ff',glow:'rgba(0,229,255,.4)'},visiting:{fill:'#ff6d00',stroke:'#ff9d40',glow:'rgba(255,109,0,.5)'},visited:{fill:'#7a5c00',stroke:'#ffb300',glow:'rgba(255,179,0,.3)'},path:{fill:'#003d1a',stroke:'#00e676',glow:'rgba(0,230,118,.5)'},source:{fill:'#003a55',stroke:'#00e5ff',glow:'rgba(0,229,255,.7)'},target:{fill:'#4a0020',stroke:'#ff3d71',glow:'rgba(255,61,113,.5)'}};
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  state.edges.forEach(drawEdge);
+  if(state.edgePending&&state.tool==='edge'){const n=state.edgePending;ctx.beginPath();ctx.arc(n.x,n.y,NODE_R+6,0,Math.PI*2);ctx.strokeStyle='#ff9800';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);}
+  state.nodes.forEach(drawNode);
+}
+function drawEdge(e){
+  const a=state.nodes.find(n=>n.id===e.from),b=state.nodes.find(n=>n.id===e.to);if(!a||!b)return;
+  const isPath=e.status==='path',isVis=e.status==='visited';
+  const color=isPath?'#00e676':isVis?'#ffb300':'#2e3448',lw=isPath?3.5:isVis?2.5:1.5;
+  const ang=Math.atan2(b.y-a.y,b.x-a.x);
+  const sx=a.x+Math.cos(ang)*NODE_R,sy=a.y+Math.sin(ang)*NODE_R,ex=b.x-Math.cos(ang)*NODE_R,ey=b.y-Math.sin(ang)*NODE_R;
+  if(isPath||isVis){ctx.save();ctx.shadowColor=isPath?'#00e676':'#ffb300';ctx.shadowBlur=isPath?16:8;}
+  ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex-10*Math.cos(ang-.4),ey-10*Math.sin(ang-.4));ctx.lineTo(ex-10*Math.cos(ang+.4),ey-10*Math.sin(ang+.4));ctx.closePath();ctx.fillStyle=color;ctx.fill();
+  if(isPath||isVis)ctx.restore();
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,px=-Math.sin(ang)*14,py=Math.cos(ang)*14;
+  ctx.save();ctx.font='600 12px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#0d0f14';ctx.beginPath();ctx.roundRect(mx+px-12,my+py-9,24,18,4);ctx.fill();
+  ctx.fillStyle=isPath?'#00e676':isVis?'#ffb300':'#5c647e';ctx.fillText(e.weight,mx+px,my+py);ctx.restore();
+}
+function drawNode(n){
+  const c=COLORS[n.status]||COLORS.default;
+  ctx.save();ctx.shadowColor=c.glow;ctx.shadowBlur=n.status!=='default'?20:10;
+  ctx.beginPath();ctx.arc(n.x,n.y,NODE_R,0,Math.PI*2);ctx.fillStyle=c.fill;ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=c.stroke;ctx.stroke();ctx.restore();
+  ctx.save();ctx.font="700 14px 'Syne',sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(n.label,n.x,n.y);ctx.restore();
+  if(n.dist!==undefined&&n.dist!==Infinity){ctx.save();ctx.font='600 10px "Share Tech Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(13,15,20,.9)';ctx.beginPath();ctx.roundRect(n.x-14,n.y+NODE_R+3,28,14,3);ctx.fill();ctx.fillStyle=n.status==='path'?'#00e676':n.status==='visited'?'#ffb300':'#5c647e';ctx.fillText(n.dist,n.x,n.y+NODE_R+10);ctx.restore();}
+}
+
+function buildAdj(){const adj={};state.nodes.forEach(n=>{adj[n.id]=[];});state.edges.forEach(e=>{adj[e.from].push({to:e.to,weight:e.weight,edgeId:e.id});adj[e.to].push({to:e.from,weight:e.weight,edgeId:e.id});});return adj;}
+class MinHeap{constructor(){this.d=[];}push(i){this.d.push(i);this._up(this.d.length-1);}pop(){const t=this.d[0],l=this.d.pop();if(this.d.length){this.d[0]=l;this._dn(0);}return t;}get size(){return this.d.length;}_up(i){while(i>0){const p=(i-1)>>1;if(this.d[p].dist<=this.d[i].dist)break;[this.d[p],this.d[i]]=[this.d[i],this.d[p]];i=p;}}_dn(i){const n=this.d.length;while(true){let m=i,l=2*i+1,r=2*i+2;if(l<n&&this.d[l].dist<this.d[m].dist)m=l;if(r<n&&this.d[r].dist<this.d[m].dist)m=r;if(m===i)break;[this.d[m],this.d[i]]=[this.d[i],this.d[m]];i=m;}}}
+function dijkstra(srcId){
+  const adj=buildAdj(),dist={},prev={},prevEdge={},steps=[];
+  state.nodes.forEach(n=>{dist[n.id]=n.id===srcId?0:Infinity;prev[n.id]=null;prevEdge[n.id]=null;});
+  const pq=new MinHeap(),visited=new Set();pq.push({dist:0,id:srcId});
+  while(pq.size>0){const{dist:d,id:u}=pq.pop();if(visited.has(u))continue;visited.add(u);steps.push({type:'visit',nodeId:u,dist:d});for(const{to:v,weight:w,edgeId}of adj[u]){if(visited.has(v))continue;const nd=dist[u]+w;if(nd<dist[v]){dist[v]=nd;prev[v]=u;prevEdge[v]=edgeId;pq.push({dist:nd,id:v});steps.push({type:'relax',nodeId:v,fromId:u,edgeId,dist:nd});}}}
+  return{dist,prev,prevEdge,steps};
+}
+function getPath(prev,srcId,tgtId){const path=[];let cur=tgtId;while(cur!==null){path.unshift(cur);cur=prev[cur];}return path[0]===srcId?path:null;}
+function clearRunColors(){state.nodes.forEach(n=>{delete n.dist;n.status='default';});state.edges.forEach(e=>{e.status='default';});draw();}
+
+btnRun.addEventListener('click',async()=>{
+  if(state.running)return;
+  const srcId=parseInt(selSource.value);
+  if(!srcId){logInfo('⚠ Selecione um nó de origem.');return;}
+  if(state.nodes.length<2){logInfo('⚠ Adicione pelo menos 2 nós.');return;}
+  clearRunColors();state.running=true;btnRun.disabled=true;btnClearRun.disabled=false;
+  logBox.innerHTML='';logInfo('Iniciando Dijkstra...');
+  const srcNode=state.nodes.find(n=>n.id===srcId);srcNode.status='source';draw();
+  const{dist,prev,prevEdge,steps}=dijkstra(srcId);
+  const tgtId=parseInt(selTarget.value)||null;
+  const delay=()=>1600-parseInt(speedInput.value);
+  for(const step of steps){
+    if(!state.running)break;
+    if(step.type==='visit'){const n=state.nodes.find(x=>x.id===step.nodeId);if(n&&n.status!=='source')n.status='visiting';if(n)n.dist=step.dist;logVisit(`Visitando <strong>${n?.label}</strong> — dist: ${step.dist}`);draw();await sleep(delay());if(n&&n.status==='visiting')n.status='visited';draw();}
+    if(step.type==='relax'){const n=state.nodes.find(x=>x.id===step.nodeId),e=state.edges.find(x=>x.id===step.edgeId);if(n)n.dist=step.dist;if(e)e.status='visited';const src=state.nodes.find(x=>x.id===step.fromId);logInfo(`  Relaxando ${src?.label} → ${n?.label} = ${step.dist}`);draw();await sleep(delay()*.4);}
+  }
+  if(!state.running)return;
+  if(tgtId){const path=getPath(prev,srcId,tgtId);if(path)highlightPath(path,prevEdge,dist,tgtId);else logInfo(`⚠ Nó ${state.nodes.find(n=>n.id===tgtId)?.label} não alcançável`);}
+  else{state.nodes.forEach(n=>{if(n.id!==srcId&&dist[n.id]!==Infinity){const p=getPath(prev,srcId,n.id);if(p)highlightPath(p,prevEdge,dist,n.id,false);}});const s=state.nodes.find(n=>n.id===srcId);if(s)s.status='path';logDone(`✓ Dijkstra completo a partir de ${srcNode.label}`);}
+  showDistances(dist,srcId,tgtId,prev);draw();state.running=false;btnRun.disabled=false;
+});
+
+function highlightPath(path,prevEdge,dist,tgtId,log=true){
+  path.forEach(nid=>{const n=state.nodes.find(x=>x.id===nid);if(n){n.status='path';n.dist=dist[nid];}});
+  for(let i=1;i<path.length;i++){const e=state.edges.find(x=>x.id===prevEdge[path[i]]);if(e)e.status='path';}
+  if(log){const labels=path.map(id=>state.nodes.find(n=>n.id===id)?.label).join(' → ');logPath(`Caminho → ${labels} (total: ${dist[tgtId]})`);}
+}
+function showDistances(dist,srcId,tgtId,prev){
+  distOutput.innerHTML='';const srcNode=state.nodes.find(n=>n.id===srcId);
+  state.nodes.forEach(n=>{const d=dist[n.id],isPath=tgtId?(getPath(prev,srcId,tgtId)||[]).includes(n.id):d!==Infinity;const row=document.createElement('div');row.className='dist-row'+(isPath?' path':'')+(d===Infinity?' unreachable':'');row.innerHTML=`<span class="dist-node">${srcNode.label} → ${n.label}</span><span class="dist-val ${d===Infinity?'inf':''}">${d===Infinity?'∞':d}</span>`;distOutput.appendChild(row);});
+}
+
+btnReset.addEventListener('click',()=>{if(state.running)state.running=false;state.nodes=[];state.edges=[];state.edgePending=null;state.nodeCounter=0;state.edgeCounter=0;labelIdx=0;updateSelects();clearRunColors();distOutput.innerHTML='<p class="hint">Execute o algoritmo para ver os resultados.</p>';logBox.innerHTML='<p class="hint">Adicione nós e arestas, depois execute.</p>';btnRun.disabled=false;btnClearRun.disabled=true;draw();});
+btnClearRun.addEventListener('click',()=>{if(state.running)state.running=false;clearRunColors();distOutput.innerHTML='<p class="hint">Execute o algoritmo para ver os resultados.</p>';btnRun.disabled=false;btnClearRun.disabled=true;logInfo('Execução limpa.');});
+
+function addLog(msg,cls){const p=document.createElement('p');p.className=`log-entry ${cls}`;p.innerHTML=msg;logBox.appendChild(p);logBox.scrollTop=logBox.scrollHeight;}
+const logInfo=m=>addLog(m,'info'),logVisit=m=>addLog(m,'visit'),logPath=m=>addLog(m,'path'),logDone=m=>addLog(m,'done');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function loadDemo(){
+  const cx=canvas.width/2,cy=canvas.height/2,R=Math.min(canvas.width,canvas.height)*.30;
+  [{x:cx,y:cy-R},{x:cx+R*.85,y:cy-R*.4},{x:cx+R*.9,y:cy+R*.55},{x:cx,y:cy+R},{x:cx-R*.9,y:cy+R*.55},{x:cx-R*.85,y:cy-R*.4},{x:cx,y:cy}].forEach(p=>addNode(p.x,p.y));
+  const[A,B,C,D,E,F,G]=state.nodes;
+  [[A,B,4],[A,F,2],[B,G,5],[B,C,3],[F,G,6],[F,E,8],[G,C,7],[G,D,9],[G,E,1],[C,D,2],[E,D,4]].forEach(([f,t,w])=>addEdge(f,t,w));
+  selSource.value=A.id;logInfo('Grafo de exemplo carregado. Clique em ▶ Executar!');
+}
+resizeCanvas();setTimeout(loadDemo,150);
+</script>
 </body>
 </html>
