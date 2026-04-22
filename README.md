@@ -2,21 +2,6 @@
 
 Visualizador interativo do Algoritmo de Dijkstra — construído com HTML, CSS e JavaScript puro. Pronto para deploy no Vercel.
 
-## 🚀 Deploy na Vercel
-
-### Opção 1 — Via Vercel CLI
-```bash
-npm install -g vercel
-cd dijkstra-visualizer
-vercel
-```
-
-### Opção 2 — Via GitHub + Vercel Dashboard
-1. Suba esta pasta para um repositório no GitHub
-2. Acesse [vercel.com](https://vercel.com) → **New Project**
-3. Importe o repositório → clique em **Deploy**
-4. Pronto! O Vercel detecta automaticamente como site estático.
-
 ---
 
 ## 🎮 Como usar
@@ -70,5 +55,3 @@ dijkstra-visualizer/
 - **JavaScript ES2022** — lógica do algoritmo e interação
 - **Min-Heap** — fila de prioridade para Dijkstra eficiente
 - **Vercel** — hospedagem estática
-
-> **Nota sobre Java:** A Vercel não suporta Java nativamente em suas serverless functions. Como o Dijkstra pode rodar inteiramente no browser, esta implementação em JavaScript puro oferece a melhor experiência: zero latência de rede, sem backend, deploy instantâneo.
